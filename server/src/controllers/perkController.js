@@ -69,9 +69,42 @@ export async function createPerk(req, res, next) {
 }
 // TODO
 // Update an existing perk by ID and validate only the fields that are being updated 
+// Update an existing perk by ID and validate only the fields that are being updated 
+// Update an existing perk by ID and validate only the fields that are being updated 
 export async function updatePerk(req, res, next) {
-  
+  try {
+    // Clone perkSchema but override 'title' to optional only here
+    const updateSchema = perkSchema.fork('title', (field) => field.optional());
+
+    // Validate using the modified schema
+    const { value, error } = updateSchema.validate(req.body, {
+      presence: 'optional',
+      noDefaults: true,
+      stripUnknown: true,
+    });
+
+    if (error) {
+      return res.status(400).json({ message: error.message });
+    }
+
+    const updatedPerk = await Perk.findByIdAndUpdate(
+      req.params.id,
+      { $set: value },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedPerk) {
+      return res.status(404).json({ message: 'Perk not found' });
+    }
+
+    res.json({ perk: updatedPerk });
+  } catch (err) {
+    next(err);
+  }
 }
+
+
+
 
 
 // Delete a perk by ID
